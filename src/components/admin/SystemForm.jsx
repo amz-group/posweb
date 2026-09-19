@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Loader2, X, ImagePlus, FileArchive } from 'lucide-react';
+import { Upload, Loader2, X, ImagePlus, Link2 } from 'lucide-react';
 import { api } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,11 +29,8 @@ export default function SystemForm({ initial, onSave, onCancel, saving }) {
   const [featuresText, setFeaturesText] = useState((initial?.features || []).join('\n'));
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingShots, setUploadingShots] = useState([]);
-  const [uploadingFile, setUploadingFile] = useState(false);
-  const [fileProgress, setFileProgress] = useState(0);
   const logoRef = useRef(null);
   const shotsRef = useRef(null);
-  const fileRef = useRef(null);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -69,24 +66,17 @@ export default function SystemForm({ initial, onSave, onCancel, saving }) {
     setUploadingShots([]);
   };
 
-  const handleFile = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingFile(true);
-    setFileProgress(0);
-    const interval = setInterval(() => setFileProgress((p) => (p < 90 ? p + 5 : p)), 200);
-    try {
-      const { file_uri } = await api.storage.uploadPrivateFile(file);
-      set('system_file_uri', file_uri);
-      set('system_file_name', file.name);
-      setFileProgress(100);
-      toast.success('System file uploaded.');
-    } catch (err) {
-      toast.error('System file upload failed.');
-    } finally {
-      clearInterval(interval);
-      setUploadingFile(false);
-    }
+  const handleDownloadLink = (value) => {
+    setForm((current) => {
+      let fileName = current.system_file_name;
+      try {
+        const pathname = new URL(value).pathname;
+        fileName = decodeURIComponent(pathname.split('/').filter(Boolean).pop() || '');
+      } catch {
+        // Keep the current file name while the user is still typing the URL.
+      }
+      return { ...current, system_file_uri: value, system_file_name: fileName };
+    });
   };
 
   const submit = (e) => {
@@ -172,31 +162,23 @@ export default function SystemForm({ initial, onSave, onCancel, saving }) {
         </div>
       </div>
 
-      {/* System File */}
+      {/* GitHub release download */}
       <div className="space-y-2">
-        <Label>System File (ZIP, EXE, MSI, APK...)</Label>
-        <div className="rounded-xl border border-border/60 bg-muted/20 p-4">
-          {form.system_file_uri ? (
-            <div className="flex items-center gap-3">
-              <FileArchive className="h-8 w-8 text-primary" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{form.system_file_name}</div>
-                <div className="text-xs text-primary">Uploaded to private storage</div>
-              </div>
-              <button type="button" onClick={() => { set('system_file_uri', ''); set('system_file_name', ''); }} className="text-destructive hover:text-destructive/80"><X className="h-4 w-4" /></button>
-            </div>
-          ) : uploadingFile ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Uploading... {fileProgress}%</div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted"><div className="h-full bg-primary transition-all" style={{ width: `${fileProgress}%` }} /></div>
-            </div>
-          ) : (
-            <button type="button" onClick={() => fileRef.current?.click()} className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-6 text-sm text-muted-foreground hover:border-primary hover:text-primary">
-              <Upload className="h-4 w-4" /> Click to upload system file
-            </button>
-          )}
-          <input ref={fileRef} type="file" accept=".zip,.exe,.msi,.apk,.dmg,.pkg,.tar,.gz,.rar,.7z" onChange={handleFile} className="hidden" />
+        <Label htmlFor="github-download-link">GitHub Download Link *</Label>
+        <div className="relative">
+          <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="github-download-link"
+            type="url"
+            required
+            value={form.system_file_uri}
+            onChange={(e) => handleDownloadLink(e.target.value)}
+            placeholder="https://github.com/amz-group/posweb/releases/download/v1.0.5/setup.exe"
+            className="pl-9"
+          />
         </div>
+        <p className="text-xs text-muted-foreground">Paste the direct asset link from a GitHub Release. The file name is detected automatically.</p>
+        {form.system_file_name && <p className="truncate text-xs text-primary">File: {form.system_file_name}</p>}
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
