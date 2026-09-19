@@ -102,7 +102,7 @@ export default function AdminSystems() {
                   </div>
                   <div className="mt-0.5 flex flex-wrap gap-2 font-mono text-[11px] text-muted-foreground">
                     <span>v{s.version}</span><span>·</span><span>{s.platform}</span><span>·</span><span>{Number(s.price_iqd || 0).toLocaleString()} IQD</span>
-                    {s.system_file_uri ? <><span>·</span><span className="text-primary">File attached</span></> : <><span>·</span><span className="text-destructive/70">No file</span></>}
+                    {s.system_file_uri ? <><span>·</span><span className="text-primary">GitHub link attached</span></> : <><span>·</span><span className="text-destructive/70">No download link</span></>}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
