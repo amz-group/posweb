@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { api, supabase } from '@/api/supabaseClient';
+import { api } from '@/api/supabaseClient';
 
 const AuthContext = createContext();
 
@@ -13,9 +13,7 @@ export const AuthProvider = ({ children }) => {
   const [appPublicSettings, setAppPublicSettings] = useState(null); // Contains only { id, public_settings }
 
   useEffect(() => {
-    checkAppState();
-    const { data: listener } = supabase.auth.onAuthStateChange(() => checkUserAuth());
-    return () => listener.subscription.unsubscribe();
+    void checkAppState();
   }, []);
 
   const checkAppState = async () => {
